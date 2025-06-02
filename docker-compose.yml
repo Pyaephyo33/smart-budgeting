@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: smart-budgeting-backend # ✅ unique name
+    expose:
+      - "5000"
+    networks:
+      - appnet
+
+  frontend:
+    build:
+      context: . # 👈 dockerfile is in frontend/
+      dockerfile: frontend/Dockerfile
+    container_name: smart-budgeting-frontend # ✅ unique name
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - appnet
+
+networks:
+  appnet:
