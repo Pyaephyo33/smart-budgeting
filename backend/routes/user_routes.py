@@ -37,7 +37,11 @@ def login():
 
     user = User.query.filter_by(email=email).first()
     if user and bcrypt.check_password_hash(user.password_hash, password):
-        access_token = create_access_token(identity={'id': user.id, 'role': user.role})
+        # access_token = create_access_token(identity={'id': user.id, 'role': user.role})
+        access_token = create_access_token(
+            identity=str(user.id),
+            additional_claims={"role": user.role}
+        )
         return jsonify({'access_token': access_token}), 200
 
     return jsonify({'message': 'Invalid credentials'}), 401
@@ -46,5 +50,15 @@ def login():
 @user_bp.route('/profile', methods=['GET'])
 @jwt_required()
 def profile():
-    identity = get_jwt_identity()
-    return jsonify({'user': identity}), 200
+    user_id = get_jwt_identity()  # will now be a string
+    user = User.query.get(int(user_id))
+
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    return jsonify({
+        "id": user.id,
+        "name": user.name,
+        "email": user.email
+    }), 200
+
