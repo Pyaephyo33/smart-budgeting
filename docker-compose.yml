@@ -1,26 +1,43 @@
-version: "3.8"
-
 services:
+  db:
+    image: postgres:16
+    container_name: smart-budgeting-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: smartbudget
+    volumes:
+      - smart-budgeting_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - appnet
+
   backend:
     build:
       context: ./backend
-    container_name: smart-budgeting-backend # ✅ unique name
-    expose:
-      - "5000"
+    container_name: smart-budgeting-backend
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"
     networks:
       - appnet
 
   frontend:
     build:
-      context: . # 👈 dockerfile is in frontend/
+      context: .
       dockerfile: frontend/Dockerfile
-    container_name: smart-budgeting-frontend # ✅ unique name
+    container_name: smart-budgeting-frontend
     ports:
       - "3000:80"
     depends_on:
       - backend
     networks:
       - appnet
+
+volumes:
+  smart-budgeting_pgdata:
 
 networks:
   appnet:
