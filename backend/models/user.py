@@ -14,3 +14,6 @@ class User(db.Model):
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password_hash, password)
+    
+    # foreign keys 
+    accounts = db.relationship('Account', back_populates='user', cascade="all, delete")
