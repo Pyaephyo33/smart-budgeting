@@ -6,6 +6,7 @@ from config import Config
 # BluePrints
 from routes.user_routes import user_bp
 from routes.account_routes import account_bp
+from routes.category_routes import category_bp
 
 def create_app():
     app = Flask(__name__)
@@ -19,6 +20,7 @@ def create_app():
     # Routes
     app.register_blueprint(user_bp, url_prefix='/api/users')
     app.register_blueprint(account_bp, url_prefix='/api/accounts')
+    app.register_blueprint(category_bp, url_prefix='/api/categories')
 
 
     @app.route("/api/hello")

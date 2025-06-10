@@ -71,34 +71,6 @@ def withdraw_money(account_id):
     }), 200
 
 
-# Withdraw money from an account
-@account_bp.route('/<int:account_id>/withdraw', methods=['PATCH'])
-@jwt_required()
-def withdraw_money(account_id):
-    user_id = get_jwt_identity()
-    data = request.get_json()
-    amount = data.get('amount')
-
-    if not amount or amount <= 0:
-        return jsonify({"message": "Amount must be greater than zero"}), 400
-
-    account = Account.query.filter_by(id=account_id, user_id=user_id).first()
-    if not account:
-        return jsonify({"message": "Account not found"}), 404
-
-    if account.balance < amount:
-        return jsonify({"message": "Insufficient balance"}), 400
-
-    account.balance -= amount
-    db.session.commit()
-
-    return jsonify({
-        "message": f"{amount} withdrawn from account",
-        "new_balance": account.balance
-    }), 200
-
-
-
 # Delete an account by ID
 @account_bp.route('/<int:account_id>', methods=['DELETE'])
 @jwt_required()
