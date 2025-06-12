@@ -8,7 +8,7 @@ class SavingsGoal(db.Model):
     target_amount = db.Column(db.Float, nullable=False)
     current_saved = db.Column(db.Float, nullable=False, default=0.0)
     target_date = db.Column(db.Date, nullable=False)
-    is_achieved = db.Column(db.Boolean, default=False)
+    achieved = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return f"<SavingsGoal {self.title}>"

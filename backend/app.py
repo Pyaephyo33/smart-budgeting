@@ -8,7 +8,7 @@ from routes.user_routes import user_bp
 from routes.account_routes import account_bp
 from routes.category_routes import category_bp
 from routes.envelope_routes import envelope_bp
-from routes.savings_goal_routes import savings_goal_bp
+from routes.savings_goal_routes import goal_bp
 
 def create_app():
     app = Flask(__name__)
@@ -24,7 +24,7 @@ def create_app():
     app.register_blueprint(account_bp, url_prefix='/api/accounts')
     app.register_blueprint(category_bp, url_prefix='/api/categories')
     app.register_blueprint(envelope_bp, url_prefix='/api/envelopes')
-    app.register_blueprint(savings_goal_bp, url_prefix='/api/savings')
+    app.register_blueprint(goal_bp, url_prefix='/api/goals')
 
     @app.route("/api/hello")
     def hello():

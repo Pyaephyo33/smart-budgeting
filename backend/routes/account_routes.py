@@ -44,6 +44,32 @@ def list_accounts():
     ]
     return jsonify(result), 200
 
+# Deposit money into an account
+@account_bp.route('/<int:account_id>/deposit', methods=['PATCH'])
+@jwt_required()
+def deposit_money(account_id):
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    amount = data.get('amount')
+
+    if not amount or amount <= 0:
+        return jsonify({"message": "Amount must be greater than zero"}), 400
+
+    account = Account.query.filter_by(id=account_id, user_id=user_id).first()
+    if not account:
+        return jsonify({"message": "Account not found"}), 404
+
+    account.balance += amount
+    db.session.commit()
+
+    return jsonify({
+        "message": f"{amount} added to account",
+        "new_balance": account.balance
+    }), 200
+
+
+
+
 # Withdraw money from an account
 @account_bp.route('/<int:account_id>/withdraw', methods=['PATCH'])
 @jwt_required()

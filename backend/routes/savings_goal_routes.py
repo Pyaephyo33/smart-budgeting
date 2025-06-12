@@ -64,7 +64,8 @@ def deposit_to_goal(goal_id):
     user_id = get_jwt_identity()
     data = request.get_json()
 
-    amount = data.get_json()
+    # amount = data.get_json()
+    amount = data.get("amount")
     from_account_id = data.get("from_account_id") # optional
 
     if not amount or amount <= 0:
@@ -145,7 +146,7 @@ def get_overdue_goals():
         {
             "id": g.id,
             "title": g.title,
-            "target_date": g.target_date.isoformal(),
+            "target_date": g.target_date.isoformat(),
             "target_amount": g.target_amount,
             "current_saved": g.current_saved
         } for g in overdue_goals
