@@ -10,6 +10,7 @@ from routes.category_routes import category_bp
 from routes.envelope_routes import envelope_bp
 from routes.savings_goal_routes import goal_bp
 from routes.transaction_routes import transaction_bp
+from routes.ml_routes import ml_bp
 
 def create_app():
     app = Flask(__name__)
@@ -27,6 +28,7 @@ def create_app():
     app.register_blueprint(envelope_bp, url_prefix='/api/envelopes')
     app.register_blueprint(goal_bp, url_prefix='/api/goals')
     app.register_blueprint(transaction_bp, url_prefix='/api/transactions')
+    app.register_blueprint(ml_bp, url_prefix='/api/ml')
 
     @app.route("/api/hello")
     def hello():
