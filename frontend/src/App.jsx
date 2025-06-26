@@ -1,20 +1,22 @@
-import React from 'react'
-import { useEffect, useState } from 'react'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// Pages & Components
+import Home from './pages/Home';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+// import Dashboard from './Dashboard'; // if used
+import Dashboard from './pages/Dashboard';
 
 const App = () => {
-  const [msg, setMsg] = useState('')
-
-  useEffect(() => {
-    fetch('/api/hello')
-      .then(res => res.json())
-      .then(data => setMsg(data.message))
-  }, [])
-
   return (
-    <div>
-      <h1 style={{ textAlign: 'center', marginTop: '100px' }}>{msg || 'Loading...'}</h1>
-    </div>
-  )
-}
+    <Router>
+      <Routes>
+        <Route path="/" element={<><Navbar /> <Home /> <Footer /></>} />
+        <Route path="/dashboard" element={<Dashboard />} /> {/* Optional */}
+      </Routes>
+    </Router>
+  );
+};
 
-export default App
+export default App;
