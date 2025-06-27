@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models.user import User
-from extensions import db, bcrypt, jwt
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from extensions import db, bcrypt, jwt, blacklist
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from datetime import datetime
 
 user_bp = Blueprint('user_bp', __name__)
@@ -62,3 +62,10 @@ def profile():
         "email": user.email
     }), 200
 
+# Logout route with token revocation
+@user_bp.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    jti = get_jwt()["jti"]
+    blacklist.add(jti)
+    return jsonify({"message": "Successfully logged out"}), 200
