@@ -69,6 +69,66 @@ def get_last_expense_transactions(user_id, limit=5):
     print(f"[DEBUG] User {user_id} | Last {limit} expenses: {amounts}")
     return np.array(amounts).reshape(-1, 1)
 
+##### Old Code Logic #####
+
+# @ml_bp.route('/predict-weekly-spending', methods=["GET"])
+# @jwt_required()
+# def predict_weekly_spending():
+#     user_id = get_jwt_identity()
+#     amount_data = get_last_expense_transactions(user_id)
+
+#     if amount_data is None or len(amount_data) < 5:
+#         return jsonify({"message": "Not enough transaction data to predict."}), 400
+
+#     # Prepare input
+#     scaled = scaler.transform(amount_data)[-5:]
+#     input_seq = torch.tensor(scaled, dtype=torch.float32).unsqueeze(0).to(device)
+
+#     # Run model
+#     with torch.no_grad():
+#         prediction = model(input_seq).cpu().numpy().flatten()[0]
+
+#     predicted_scaled = np.array([[prediction]])
+#     predicted_amount = float(scaler.inverse_transform(predicted_scaled)[0][0])
+
+#     # Check if the same prediction already exists for the user
+#     last_prediction = MLPrediction.query.filter_by(user_id=user_id).order_by(MLPrediction.timestamp.desc()).first()
+#     if last_prediction and round(last_prediction.predicted_amount, 2) == round(predicted_amount, 2):
+#         return jsonify({
+#             "message": "Prediction already exists with the same value for this user.",
+#             "predicted_class": last_prediction.predicted_class,
+#             "predicted_amount": round(last_prediction.predicted_amount, 2),
+#             "model_version": last_prediction.model_version,
+#             "timestamp": last_prediction.timestamp.isoformat()
+#         }), 200
+
+#     # Classification
+#     if predicted_amount < 50:
+#         predicted_class = "low"
+#     elif predicted_amount < 200:
+#         predicted_class = "medium"
+#     else:
+#         predicted_class = "high"
+
+#     # Save to DB
+#     prediction_record = MLPrediction(
+#         user_id=user_id,
+#         transaction_id=None,
+#         predicted_class=predicted_class,
+#         predicted_amount=predicted_amount,
+#         model_version=MODEL_VERSION
+#     )
+#     db.session.add(prediction_record)
+#     db.session.commit()
+
+#     return jsonify({
+#         "message": "Prediction successful",
+#         "predicted_class": predicted_class,
+#         "predicted_amount": round(predicted_amount, 2),
+#         "model_version": MODEL_VERSION,
+#         "timestamp": prediction_record.timestamp.isoformat()
+#     }), 200
+
 
 @ml_bp.route('/predict-weekly-spending', methods=["GET"])
 @jwt_required()
@@ -79,18 +139,18 @@ def predict_weekly_spending():
     if amount_data is None or len(amount_data) < 5:
         return jsonify({"message": "Not enough transaction data to predict."}), 400
 
-    # Prepare input
+    # --- Prepare Input ---
     scaled = scaler.transform(amount_data)[-5:]
     input_seq = torch.tensor(scaled, dtype=torch.float32).unsqueeze(0).to(device)
 
-    # Run model
+    # --- Run Model ---
     with torch.no_grad():
         prediction = model(input_seq).cpu().numpy().flatten()[0]
 
     predicted_scaled = np.array([[prediction]])
     predicted_amount = float(scaler.inverse_transform(predicted_scaled)[0][0])
 
-    # Check if the same prediction already exists for the user
+    # --- Check for Duplicate Prediction ---
     last_prediction = MLPrediction.query.filter_by(user_id=user_id).order_by(MLPrediction.timestamp.desc()).first()
     if last_prediction and round(last_prediction.predicted_amount, 2) == round(predicted_amount, 2):
         return jsonify({
@@ -101,15 +161,35 @@ def predict_weekly_spending():
             "timestamp": last_prediction.timestamp.isoformat()
         }), 200
 
-    # Classification
-    if predicted_amount < 50:
+    # --- Monthly Prediction Limit Check (after duplicate check) ---
+    now = datetime.now()
+    start_of_month = datetime(now.year, now.month, 1)
+    if now.month < 12:
+        end_of_month = datetime(now.year, now.month + 1, 1)
+    else:
+        end_of_month = datetime(now.year + 1, 1, 1)
+
+    monthly_predictions = MLPrediction.query.filter(
+        MLPrediction.user_id == user_id,
+        MLPrediction.timestamp >= start_of_month,
+        MLPrediction.timestamp < end_of_month
+    ).count()
+
+    if monthly_predictions >= 3:
+        return jsonify({
+            "message": "Monthly prediction limit (3) reached.",
+            "next_available": end_of_month.strftime("%Y-%m-%d")
+        }), 429
+
+    # --- Classification ---
+    if predicted_amount < 500:
         predicted_class = "low"
-    elif predicted_amount < 200:
+    elif predicted_amount < 2000:
         predicted_class = "medium"
     else:
         predicted_class = "high"
 
-    # Save to DB
+    # --- Save to DB ---
     prediction_record = MLPrediction(
         user_id=user_id,
         transaction_id=None,
