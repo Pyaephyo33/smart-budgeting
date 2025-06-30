@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Home,
@@ -10,16 +10,36 @@ import {
   Goal,
 } from 'lucide-react';
 
-const menuItems = [
-  { name: 'Dashboard', icon: <Home className="w-4 h-4" />, path: '/' },
-  { name: 'Tables', icon: <Table className="w-4 h-4" />, path: '/tables' },
-  { name: 'Categories', icon: <Layers className="w-4 h-4" />, path: '/categories' },
-  { name: 'Envelopes', icon: <Folder className="w-4 h-4" />, path: '/envelopes' },
-  { name: 'Savings', icon: <Goal className="w-4 h-4" />, path: '/savings-goals' }
-];
-
 const Sidebar = () => {
   const [open, setOpen] = useState(true);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/users/profile', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        }
+      } catch (err) {
+        console.error('Failed to load user profile', err);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const menuItems = [
+    { name: 'Dashboard', icon: <Home className="w-4 h-4" />, path: '/' },
+    { name: 'Tables', icon: <Table className="w-4 h-4" />, path: '/tables' },
+    { name: 'Categories', icon: <Layers className="w-4 h-4" />, path: '/categories' },
+    { name: 'Envelopes', icon: <Folder className="w-4 h-4" />, path: '/envelopes' },
+    { name: 'Savings', icon: <Goal className="w-4 h-4" />, path: '/savings-goals' }
+  ];
 
   return (
     <div className={`transition-all duration-300 h-screen bg-white dark:bg-gray-800 shadow-md ${open ? 'w-64' : 'w-16'} fixed z-50`}>
@@ -34,6 +54,22 @@ const Sidebar = () => {
           {open ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
         </button>
       </div>
+
+      {user && (
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <NavLink
+            to="/profile"
+            className="flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded transition"
+          >
+            <img
+              src={`https://ui-avatars.com/api/?name=${user.name}&background=random`}
+              alt="Profile"
+              className="w-8 h-8 rounded-full"
+            />
+            {open && <span className="text-gray-800 dark:text-white font-medium">{user.name}</span>}
+          </NavLink>
+        </div>
+      )}
 
       <nav className="mt-4">
         {menuItems.map((item) => (

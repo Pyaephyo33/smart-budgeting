@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Auth = () => {
@@ -7,16 +7,24 @@ const Auth = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+  // Redirect if already authenticated
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/dashboard");
+    }
+  }, []);
 
-  const handleLogin = async e => {
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
     try {
       const res = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email, password: form.password })
+        body: JSON.stringify({ email: form.email, password: form.password }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -30,7 +38,7 @@ const Auth = () => {
     }
   };
 
-  const handleRegister = async e => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError(null);
     if (form.password !== form.confirm) {
@@ -44,8 +52,8 @@ const Auth = () => {
         body: JSON.stringify({
           name: form.name,
           email: form.email,
-          password: form.password
-        })
+          password: form.password,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
