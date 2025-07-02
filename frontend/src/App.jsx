@@ -13,6 +13,8 @@ import Auth from './pages/auth/Auth';
 // admin
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/auth/Profile';
+import Settings from './pages/auth/Settings';
+import UserAccount from './pages/auth/UserAccount';
 
 // envelope
 import TableEnvelope from './pages/envelope/TableEnvelope';
@@ -47,6 +49,18 @@ const App = () => {
         <Route path="/profile" element={
           <PrivateRoute>
             <Profile />
+          </PrivateRoute>
+        } />
+
+        <Route path='/settings' element={
+          <PrivateRoute>
+            <Settings />
+          </PrivateRoute>
+        } />
+
+        <Route path="/user-account" element={
+          <PrivateRoute>
+            <UserAccount />
           </PrivateRoute>
         } />
 

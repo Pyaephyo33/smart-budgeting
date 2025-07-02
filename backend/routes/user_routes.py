@@ -69,3 +69,37 @@ def logout():
     jti = get_jwt()["jti"]
     blacklist.add(jti)
     return jsonify({"message": "Successfully logged out"}), 200
+
+# update route
+@user_bp.route('/update', methods=['PATCH'])
+@jwt_required()
+def update_user():
+    user_id = get_jwt_identity()
+    user = User.query.get(int(user_id))
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+    
+    data = request.get_json()
+
+    new_name = data.get('name')
+    new_email = data.get('email')
+    new_password = data.get('password')
+    new_role = data.get('role')
+
+    if new_name:
+        user.name = new_name
+    if new_email:
+        # Optional: Check if email is already taken by someone else
+        existing = User.query.filter_by(email=new_email).first()
+        if existing and existing.id != user.id:
+            return jsonify({'message': 'Email already in use'}), 409
+        user.email = new_email
+    if new_password:
+        user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    if new_role:
+        user.role = new_role
+    
+    db.session.commit()
+
+    return jsonify({'message': 'User updated successfully'}), 200
