@@ -21,6 +21,11 @@ import TableEnvelope from './pages/envelope/TableEnvelope';
 import CreateEnvelope from './pages/envelope/CreateEnvelope';
 import EditEnvelope from './pages/envelope/EditEnvelope';
 
+// Category
+import TableCategory from './pages/Category/TableCategory';
+import CreateCategory from './pages/Category/CreateCategory';
+import EditCategory from './pages/Category/EditCategory';
+
 // Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -78,6 +83,25 @@ const App = () => {
         <Route path="/envelopes/edit/:id" element={
           <PrivateRoute>
             <EditEnvelope />
+          </PrivateRoute>
+        } />
+
+
+        <Route path="/categories" element={
+          <PrivateRoute>
+            <TableCategory />
+          </PrivateRoute>
+        } />
+
+        <Route path="/categories/create" element={
+          <PrivateRoute>
+            <CreateCategory />
+          </PrivateRoute>
+        } />
+
+        <Route path="/categories/edit/:id" element={
+          <PrivateRoute>
+            <EditCategory />
           </PrivateRoute>
         } />
       </Routes>
