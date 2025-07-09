@@ -26,6 +26,11 @@ import TableCategory from './pages/Category/TableCategory';
 import CreateCategory from './pages/Category/CreateCategory';
 import EditCategory from './pages/Category/EditCategory';
 
+// Savings Goals
+import TableGoal from './pages/SavingsGoal/TableGoal';
+import CreateGoal from './pages/SavingsGoal/CreateGoal';
+import EditGoal from './pages/SavingsGoal/EditGoal';
+
 // Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -86,6 +91,24 @@ const App = () => {
           </PrivateRoute>
         } />
 
+        {/* Savings Goal routes */}
+        <Route path="/savings-goals" element={
+          <PrivateRoute>
+            <TableGoal />
+          </PrivateRoute>
+        } />
+        <Route path="/savings-goals/create" element={
+          <PrivateRoute>
+            <CreateGoal />
+          </PrivateRoute>
+        } />
+        <Route path="/savings-goals/edit/:id" element={
+          <PrivateRoute>
+            <EditGoal />
+          </PrivateRoute>
+        } />
+
+        {/* Category routes */}
 
         <Route path="/categories" element={
           <PrivateRoute>
