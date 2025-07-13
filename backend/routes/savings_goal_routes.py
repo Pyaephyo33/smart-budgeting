@@ -57,14 +57,54 @@ def get_goals():
         } for g in goals
     ]), 200
 
-# Deposit money into a goal
+# # Deposit money into a goal
+# @goal_bp.route('/<int:goal_id>/deposit', methods=['PATCH'])
+# @jwt_required()
+# def deposit_to_goal(goal_id):
+#     user_id = get_jwt_identity()
+#     data = request.get_json()
+
+#     # amount = data.get_json()
+#     amount = data.get("amount")
+#     from_account_id = data.get("from_account_id") # optional
+
+#     if not amount or amount <= 0:
+#         return jsonify({"message": "Amount must be greater than 0"}), 400
+    
+#     goal = SavingsGoal.query.filter_by(id=goal_id, user_id=user_id).first()
+#     if not goal:
+#         return jsonify({"message": "Goal not found"}), 404
+    
+#     if goal.achieved:
+#         return jsonify({"message": "Goal already achieved"}), 400
+    
+#     if from_account_id:
+#         account = Account.query.filter_by(id=from_account_id, user_id=user_id).first()
+#         if not account:
+#             return jsonify({"message": "Account not found"}), 404
+#         if account.balance < amount:
+#             return jsonify({"message": "Insufficient account balance"}), 400
+#         account.balance -= amount
+
+
+#     goal.current_saved += amount
+#     if goal.current_saved >= goal.target_amount:
+#         goal.achieved = True
+    
+#     db.session.commit()
+#     return jsonify({
+#         "message": f"{amount} added to savings goal",
+#         "current_saved": goal.current_saved,
+#         "achieved": goal.achieved
+#     }), 200
+
+# NEW LOGIC: deposit money into a goal 
 @goal_bp.route('/<int:goal_id>/deposit', methods=['PATCH'])
 @jwt_required()
 def deposit_to_goal(goal_id):
     user_id = get_jwt_identity()
     data = request.get_json()
-
-    # amount = data.get_json()
+    
     amount = data.get("amount")
     from_account_id = data.get("from_account_id") # optional
 
@@ -78,16 +118,23 @@ def deposit_to_goal(goal_id):
     if goal.achieved:
         return jsonify({"message": "Goal already achieved"}), 400
     
+    if goal.current_saved + amount > goal.target_amount:
+        return jsonify({
+            "message": "Deposit would exceed target amount",
+            "current_saved": goal.current_saved,
+            "target_amount": goal.target_amount
+        }), 400
+    
     if from_account_id:
         account = Account.query.filter_by(id=from_account_id, user_id=user_id).first()
         if not account:
             return jsonify({"message": "Account not found"}), 404
         if account.balance < amount:
-            return jsonify({"message": "Insufficient account balance"}), 400
+            return jsonify({"message": "Insufficient amount balance"}), 400
         account.balance -= amount
 
-
     goal.current_saved += amount
+
     if goal.current_saved >= goal.target_amount:
         goal.achieved = True
     
@@ -97,6 +144,7 @@ def deposit_to_goal(goal_id):
         "current_saved": goal.current_saved,
         "achieved": goal.achieved
     }), 200
+
 
 
 # reset an achieved goal 
