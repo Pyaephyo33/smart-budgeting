@@ -31,6 +31,13 @@ import TableGoal from './pages/SavingsGoal/TableGoal';
 import CreateGoal from './pages/SavingsGoal/CreateGoal';
 import EditGoal from './pages/SavingsGoal/EditGoal';
 
+// Transaction
+import CreateTransaction from './pages/transaction/CreateTransaction';
+import EditTransaction from './pages/transaction/EditTransaction';
+import TransactionList from './pages/transaction/TransactionList';
+import TransactionDetail from './pages/transaction/TransactionDetails';
+import ExpenseTracking from './pages/transaction/ExpenseTracking';
+
 // Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -107,6 +114,34 @@ const App = () => {
             <EditGoal />
           </PrivateRoute>
         } />
+
+        {/* Transaction routes */}
+        <Route path="/transactions" element={
+          <PrivateRoute>
+            <TransactionList />
+          </PrivateRoute>
+        } />
+        <Route path="/transactions/create" element={
+          <PrivateRoute>
+            <CreateTransaction />
+          </PrivateRoute>
+        } />
+        <Route path="/transactions/edit/:id" element={
+          <PrivateRoute>
+            <EditTransaction />
+          </PrivateRoute>
+        } />
+        <Route path="/transactions/:id" element={
+          <PrivateRoute>
+            <TransactionDetail />
+          </PrivateRoute>
+        } />
+        <Route path="/expense-tracking" element={
+          <PrivateRoute>
+            <ExpenseTracking />
+          </PrivateRoute>
+        } />
+
 
         {/* Category routes */}
 

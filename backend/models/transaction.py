@@ -2,6 +2,8 @@ from extensions import db
 from datetime import datetime
 
 class Transaction(db.Model):
+    __tablename__ = 'transactions'
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     account_id = db.Column(db.Integer, db.ForeignKey('account.id'), nullable=False)

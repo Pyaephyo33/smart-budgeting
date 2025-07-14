@@ -2,6 +2,9 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.transaction import Transaction
 from models.account import Account
+from models.category import Category
+from models.envelope import Envelope
+from models.savings_goal import SavingsGoal
 from extensions import db
 from datetime import datetime, date
 
@@ -70,23 +73,37 @@ def create_transaction():
 @jwt_required()
 def get_transactions():
     user_id = get_jwt_identity()
-    txns = Transaction.query.filter_by(user_id = user_id).all()
 
-    return jsonify([
-        {
+    txns = db.session.query(
+        Transaction,
+        Account.account_type.label("account_name"),
+        Envelope.name.label("envelope_name"),
+        Category.name.label("category_name"),
+        SavingsGoal.title.label("goal_title")
+    ).outerjoin(Account, Transaction.account_id == Account.id)\
+     .outerjoin(Envelope, Transaction.envelope_id == Envelope.id)\
+     .outerjoin(Category, Transaction.category_id == Category.id)\
+     .outerjoin(SavingsGoal, Transaction.goal_id == SavingsGoal.id)\
+     .filter(Transaction.user_id == user_id).all()
+
+    result = []
+    for t, account_name, envelope_name, category_name, goal_title in txns:
+        result.append({
             "id": t.id,
-            "account_id": t.account_id,
-            "envelope_id": t.envelope_id,
-            "category_id": t.category_id,
-            "goal_id": t.goal_id,
             "amount": t.amount,
-            "payment_method": t.payment_method,
             "type": t.type,
-            "notes": t.notes,
+            "payment_method": t.payment_method,
             "date": t.date.isoformat(),
-            "is_refunded": t.is_refunded
-        } for t in txns
-    ]), 200
+            "notes": t.notes,
+            "is_refunded": t.is_refunded,
+            "account": account_name,
+            "envelope": envelope_name,
+            "category": category_name,
+            "goal": goal_title
+        })
+
+    return jsonify(result), 200
+
 
 # Delete a transaction
 @transaction_bp.route('/<int:txn_id>', methods=['DELETE'])
@@ -260,4 +277,73 @@ def refund_transaction(transaction_id):
         "message": "Transaction fully refunded",
         "refunded_amount": transaction.amount,
         "new_account_balance": account.balance
+    }), 200
+
+
+from sqlalchemy import text
+
+@transaction_bp.route('/expense-summary', methods=["GET"])
+@jwt_required()
+def expense_summary():
+    user_id = get_jwt_identity()
+    time_range = request.args.get("range", "monthly")
+
+    if time_range not in ["monthly", "weekly"]:
+        return jsonify({"message": "Invalid range. Use 'monthly' or 'weekly'."}), 400
+
+    # Secure format string for TO_CHAR
+    date_format = "YYYY-MM" if time_range == "monthly" else "IYYY-IW"
+
+
+    sql = text(f"""
+        SELECT 
+            TO_CHAR(t.date, :date_format) as date,
+            e.name as envelope,
+            SUM(t.amount) as amount
+        FROM transactions t
+        JOIN envelope e ON t.envelope_id = e.id
+        WHERE t.user_id = :user_id AND t.type = 'expense'
+        GROUP BY TO_CHAR(t.date, :date_format), e.name
+        ORDER BY TO_CHAR(t.date, :date_format)
+    """)
+
+    result = db.session.execute(sql, {"user_id": user_id, "date_format": date_format})
+    return jsonify([dict(row._mapping) for row in result]), 200
+
+
+
+@transaction_bp.route('/<int:id>', methods=['GET'])
+@jwt_required()
+def get_transaction(id):
+    user_id = get_jwt_identity()
+
+    txn = db.session.query(
+        Transaction,
+        Account.account_type.label("account"),
+        Envelope.name.label("envelope"),
+        Category.name.label("category"),
+        SavingsGoal.title.label("goal")
+    ).outerjoin(Account, Transaction.account_id == Account.id)\
+     .outerjoin(Envelope, Transaction.envelope_id == Envelope.id)\
+     .outerjoin(Category, Transaction.category_id == Category.id)\
+     .outerjoin(SavingsGoal, Transaction.goal_id == SavingsGoal.id)\
+     .filter(Transaction.user_id == user_id, Transaction.id == id).first()
+
+    if not txn:
+        return jsonify({"message": "Transaction not found"}), 404
+
+    t, account, envelope, category, goal = txn
+
+    return jsonify({
+        "id": t.id,
+        "amount": t.amount,
+        "type": t.type,
+        "payment_method": t.payment_method,
+        "date": t.date.isoformat(),
+        "notes": t.notes,
+        "is_refunded": t.is_refunded,
+        "account": account,
+        "envelope": envelope,
+        "category": category,
+        "goal": goal,
     }), 200
