@@ -10,6 +10,34 @@ from datetime import datetime, date
 
 transaction_bp = Blueprint('transaction_bp', __name__)
 
+# Get dropdown data for creating transaction
+@transaction_bp.route('/dropdown-data', methods=['GET'])
+@jwt_required()
+def get_dropdown_data():
+    user_id = get_jwt_identity()
+
+    accounts = Account.query.filter_by(user_id=user_id).all()
+    envelopes = Envelope.query.filter_by(user_id=user_id).all()
+    categories = Category.query.all()
+    goals = SavingsGoal.query.filter_by(user_id=user_id).all()
+
+    return jsonify({
+        "accounts": [
+            {"id": a.id, "account_type": a.account_type, "balance": a.balance} for a in accounts
+        ],
+        "envelopes": [
+            {"id": e.id, "name": e.name} for e in envelopes
+        ],
+        "categories": [
+            {"id": c.id, "name": c.name} for c in categories
+        ],
+        "goals": [
+            {"id": g.id, "title": g.title} for g in goals
+        ]
+    }), 200
+
+
+
 # Create Transaction
 @transaction_bp.route('/', methods=['POST'])
 @jwt_required()
@@ -27,45 +55,42 @@ def create_transaction():
     notes = data.get("notes")
     date_str = data.get("date")
 
-    if not all([account_id, amount, txn_type]):
-        return jsonify({"message": "account_id, amount, and type are required"}), 400
-    
+    if not amount or not txn_type:
+        return jsonify({"message": "Amount and type are required"}), 400
+
     try:
         date = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else datetime.now().date()
     except ValueError:
         return jsonify({"message": "Invalid date format (use YYYY-MM-DD)"}), 400
-    
-    account = Account.query.filter_by(id=account_id, user_id=user_id).first()
-    if not account:
-        return jsonify({"message": "Account not found"}), 404
-    
-    if txn_type == "expense" and account.balance < amount:
-        return jsonify({
-            "message": "You don't have enough money in your account. Deposit more or use another account."
-        }), 400
-    
-    # Adjust balance
-    if txn_type == "expense":
-        account.balance -= amount
-    elif txn_type == "income":
-        account.balance += amount
+
+    if account_id:
+        account = Account.query.filter_by(id=account_id, user_id=user_id).first()
+        if not account:
+            return jsonify({"message": "Account not found"}), 404
+
+        if txn_type == "expense" and account.balance < amount:
+            return jsonify({"message": "Insufficient balance."}), 400
+
+        if txn_type == "expense":
+            account.balance -= amount
+        elif txn_type == "income":
+            account.balance += amount
 
     txn = Transaction(
-        user_id = user_id,
-        account_id = account_id,
-        envelope_id = envelope_id,
-        category_id = category_id,
-        goal_id = goal_id,
-        amount = amount, 
-        payment_method = payment_method,
-        type = txn_type,
-        notes = notes,
-        date = date
+        user_id=user_id,
+        account_id=account_id,
+        envelope_id=envelope_id,
+        category_id=category_id,
+        goal_id=goal_id,
+        amount=amount,
+        payment_method=payment_method,
+        type=txn_type,
+        notes=notes,
+        date=date
     )
 
     db.session.add(txn)
     db.session.commit()
-
     return jsonify({"message": "Transaction created successfully"}), 201
 
 # Get all transactions for user
