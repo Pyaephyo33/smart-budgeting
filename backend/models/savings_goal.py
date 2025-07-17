@@ -2,7 +2,7 @@ from extensions import db
 from datetime import date
 
 class SavingsGoal(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     target_amount = db.Column(db.Float, nullable=False)
