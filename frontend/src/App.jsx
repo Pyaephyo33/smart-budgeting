@@ -8,6 +8,9 @@ import 'react-toastify/dist/ReactToastify.css';
 // Pages 
 // client 
 import Home from './pages/Home';
+import Contact from './pages/Contact';
+import Features from './pages/Features';
+import FAQ from './pages/FAQ';
 import Auth from './pages/auth/Auth';
 
 // admin
@@ -54,6 +57,25 @@ const App = () => {
             <Footer />
           </>
         } />
+        <Route path="/contact" element={
+          <>
+            <Navbar />
+            <Contact />
+          </>
+        } />
+        <Route path="/faq" element={
+          <>
+            <Navbar />
+            <FAQ />
+          </>
+        } />
+        <Route path="/features" element={
+          <>
+            <Navbar />
+            <Features />
+          </>
+        } />
+
 
         <Route path="/auth" element={<Auth />} />
 

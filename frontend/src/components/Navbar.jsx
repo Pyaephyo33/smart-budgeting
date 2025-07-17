@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -45,9 +46,9 @@ const Navbar = () => {
           <a href="#pricing" className="text-gray-700 hover:text-blue-600 font-medium text-base md:text-lg">
             Pricing
           </a>
-          <a href="/contact" className="text-gray-700 hover:text-blue-600 font-medium text-base md:text-lg">
+          <Link to="/contact" className="text-gray-700 hover:text-blue-600 font-medium text-base md:text-lg">
             Contact
-          </a>
+          </Link>
 
           <div className="relative">
             <button
@@ -59,12 +60,12 @@ const Navbar = () => {
 
             {dropdownOpen && (
               <div className='absolute right-0 mt-2 bg-white border rounded-lg shadow-lg p-2 w-40 animate-fade-in z-50'>
-                <a href="#features" className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded'>
+                <Link to="/features" className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded'>
                   Features
-                </a>
-                <a href="#faq" className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded'>
+                </Link>
+                <Link to="/faq" className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded'>
                   FAQ
-                </a>
+                </Link>
                 <a href="/auth" className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded'>
                   Login
                 </a>
