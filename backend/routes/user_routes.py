@@ -21,7 +21,7 @@ def register():
         return jsonify({'message': 'Email already exists'}), 409
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = User(name=name, email=email, password_hash=hashed_password, created_at=datetime.utcnow())
+    new_user = User(name=name, email=email, password_hash=hashed_password, created_at=datetime.now())
 
     db.session.add(new_user)
     db.session.commit()
