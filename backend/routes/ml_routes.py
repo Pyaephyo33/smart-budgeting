@@ -6,6 +6,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from models.transaction import Transaction
 from models.ml_prediction import MLPrediction
+from sqlalchemy import text
 import joblib
 from datetime import datetime, timedelta
 
@@ -37,7 +38,7 @@ model.eval()
 
 scaler = joblib.load(SCALER_PATH)
 
-
+# --- Helper: Last 5 expenses ---
 def get_last_expense_transactions(user_id, limit=5):
     txns = Transaction.query.filter(
         Transaction.user_id == user_id,
@@ -48,12 +49,10 @@ def get_last_expense_transactions(user_id, limit=5):
     if not txns or len(txns) < limit:
         return None
 
-    # We reverse because we want chronological order
     amounts = [txn.amount for txn in reversed(txns)]
-    print(f"[DEBUG] User {user_id} | Last {limit} expenses: {amounts}")
     return np.array(amounts).reshape(-1, 1)
 
-
+# --- Predict Weekly Spending ---
 @ml_bp.route('/predict-weekly-spending', methods=["GET"])
 @jwt_required()
 def predict_weekly_spending():
@@ -63,18 +62,53 @@ def predict_weekly_spending():
     if amount_data is None or len(amount_data) < 5:
         return jsonify({"message": "Not enough transaction data to predict."}), 400
 
-    # --- Prepare Input ---
+    # --- Prepare input ---
     scaled = scaler.transform(amount_data)[-5:]
     input_seq = torch.tensor(scaled, dtype=torch.float32).unsqueeze(0).to(device)
 
-    # --- Run Model ---
+    # --- Model inference ---
     with torch.no_grad():
         prediction = model(input_seq).cpu().numpy().flatten()[0]
 
+    # --- Clamp extreme values from model output ---
+    prediction = np.clip(prediction, -3.0, 3.0)
+
+    # --- Inverse scaling ---
     predicted_scaled = np.array([[prediction]])
     predicted_amount = float(scaler.inverse_transform(predicted_scaled)[0][0])
 
-    # --- Check for Duplicate Prediction ---
+    # --- Recent 30-day expense average ---
+    last_30_days = datetime.now() - timedelta(days=30)
+    recent_expenses = Transaction.query.filter(
+        Transaction.user_id == user_id,
+        Transaction.type == "expense",
+        Transaction.is_refunded == False,
+        Transaction.date >= last_30_days
+    ).all()
+    recent_total = sum(t.amount for t in recent_expenses)
+    weekly_avg = recent_total / 4 if recent_total else 0
+    cap1 = 2 * weekly_avg
+
+    # --- Get total balance (for 40% cap) ---
+    # account_balances = db.session.execute(
+    #     "SELECT SUM(balance) FROM account WHERE user_id = :user_id",
+    #     {'user_id': user_id}
+    # ).scalar()
+    account_balances = db.session.execute(
+    text("SELECT SUM(balance) FROM account WHERE user_id = :user_id"),
+        {'user_id': user_id}
+    ).scalar()
+
+    cap2 = account_balances * 0.4 if account_balances else 1000
+
+    # --- Final clamped prediction ---
+    final_cap = min(cap1, cap2)
+    predicted_amount = min(predicted_amount, final_cap)
+
+    print(f"[LOGIC] User {user_id} | Weekly avg: £{weekly_avg:.2f} | Balance cap: £{cap2:.2f} | Final cap: £{final_cap:.2f}")
+    print(f"[DEBUG] Scaled: {prediction} | Final predicted weekly: £{predicted_amount:.2f}")
+
+    # --- Check for duplicate ---
     last_prediction = MLPrediction.query.filter_by(user_id=user_id).order_by(MLPrediction.timestamp.desc()).first()
     if last_prediction and round(last_prediction.predicted_amount, 2) == round(predicted_amount, 2):
         return jsonify({
@@ -85,13 +119,10 @@ def predict_weekly_spending():
             "timestamp": last_prediction.timestamp.isoformat()
         }), 200
 
-    # --- Monthly Prediction Limit Check (after duplicate check) ---
+    # --- Monthly prediction limit ---
     now = datetime.now()
     start_of_month = datetime(now.year, now.month, 1)
-    if now.month < 12:
-        end_of_month = datetime(now.year, now.month + 1, 1)
-    else:
-        end_of_month = datetime(now.year + 1, 1, 1)
+    end_of_month = datetime(now.year + 1, 1, 1) if now.month == 12 else datetime(now.year, now.month + 1, 1)
 
     monthly_predictions = MLPrediction.query.filter(
         MLPrediction.user_id == user_id,
@@ -118,7 +149,7 @@ def predict_weekly_spending():
         user_id=user_id,
         transaction_id=None,
         predicted_class=predicted_class,
-        predicted_amount=predicted_amount,
+        predicted_amount=round(predicted_amount, 2),
         model_version=MODEL_VERSION
     )
     db.session.add(prediction_record)
