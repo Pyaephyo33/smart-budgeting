@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from models.user import User
 from extensions import db, bcrypt, jwt, blacklist
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
-from datetime import datetime
+from datetime import datetime, timedelta
 
 user_bp = Blueprint('user_bp', __name__)
 
@@ -40,7 +40,8 @@ def login():
         # access_token = create_access_token(identity={'id': user.id, 'role': user.role})
         access_token = create_access_token(
             identity=str(user.id),
-            additional_claims={"role": user.role}
+            additional_claims={"role": user.role},
+            expires_delta=timedelta(hours=24)
         )
         return jsonify({'access_token': access_token}), 200
 
