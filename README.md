@@ -114,7 +114,7 @@ Backend (API): http://localhost:5000
 ## 🧮 ML Forecasting Module – Explained
 
 ### Goal:
-Predict future expenses for the next 30 days to help users anticipate financial needs.
+Predict future expenses for the next 7 days to help users anticipate financial needs.
 
 ### 🔬 Pipeline:
 1. **Data Collection**: User’s past transactions are retrieved.
